@@ -1,0 +1,21 @@
+{
+    "name": "Prevent Unload",
+    "version": "0.0.1",
+    "manifest_version": 2,
+    "description": "Extension for blocking page unload.",
+    "permissions": [
+        "storage",
+        "activeTab",
+        "http://*/*",
+        "https://*/*"
+    ],
+    "background": {
+        "scripts": ["js/bootstrap.js"],
+        "persistent": false
+    },
+    "page_action": {
+        "default_title": "Prevent Unload",
+        "default_icon": "res/icon32-allow.png",
+        "icons": ["res/icon32-allow.png", "res/icon32-deny.png"]
+    }
+}
