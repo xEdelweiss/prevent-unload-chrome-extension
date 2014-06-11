@@ -1,4 +1,22 @@
-var previousHandler = function(){};
+var blocked = [];
+
+function refreshState(tabId){
+    if (blocked[tabId]){
+        chrome.pageAction.setIcon({tabId: tabId, path: 'res/icon32-deny.png'});
+        chrome.pageAction.setTitle({tabId: tabId, title: 'Unload is blocked'});
+
+        chrome.tabs.executeScript({
+            code: 'window._previous_onbeforeunload = window.onbeforeunload; window.onbeforeunload = function(){return "Unload?"};'
+        });
+    } else {
+        chrome.pageAction.setIcon({tabId: tabId, path: 'res/icon32-allow.png'});
+        chrome.pageAction.setTitle({tabId: tabId, title: 'Unload is allowed'});
+
+        chrome.tabs.executeScript({
+            code: 'window.onbeforeunload = window._previous_onbeforeunload ? window._previous_onbeforeunload : function(){};'
+        });
+    }
+}
 
 chrome.tabs.onUpdated.addListener(function(id, info, tab){
     chrome.pageAction.show(tab.id);
@@ -9,50 +27,20 @@ chrome.tabs.onUpdated.addListener(function(id, info, tab){
 });
 
 chrome.pageAction.onClicked.addListener(function(tab) {
-
-    var blocked;
-    chrome.storage.sync.get('preventUnloadList', function(result){
-        blocked = result.preventUnloadList;
-    });
+    console.info('onClicked', blocked[tab.id]);
 
     if (!blocked[tab.id]){
         // deny
-
-        chrome.tabs.executeScript({
-            code: 'window.onbeforeunload = function(){return "Unload?"};'
-        });
-
-        chrome.pageAction.setIcon({tabId: tab.id, path: 'res/icon32-deny.png'});
         blocked[tab.id] = true;
     } else {
         // allow
-        chrome.pageAction.setIcon({tabId: tab.id, path: 'res/icon32-allow.png'});
         blocked[tab.id] = false;
     }
 
-    chrome.storage.sync.set({preventUnloadList: blocked});
-
-    chrome.tabs.executeScript({
-        code: 'console.warn('+JSON.stringify(blocked)+');'
-    });
+    refreshState(tab.id);
 });
 
 chrome.tabs.onUpdated.addListener(function(tabId, changeInfo, tab){
-    var blocked;
-    chrome.storage.sync.get('preventUnloadList', function(result){
-        blocked = result.preventUnloadList;
-    });
-
-//    var icon = localStorage['preventUnloadList'][tab.id] ? 'res/icon32-deny.png' : 'res/icon32-allow.png';
-//    chrome.pageAction.setIcon({tabId: tab.id, path: icon});
-//
-//    if (localStorage['preventUnloadList'][tab.id]) {
-//        chrome.tabs.executeScript({
-//            code: 'window.onbeforeunload = function(){return "Unload?"};'
-//        });
-//    }
-
-    chrome.tabs.executeScript({
-        code: 'console.warn('+JSON.stringify(blocked)+');'
-    });
+    console.info('onUpdated', blocked[tab.id]);
+    refreshState(tab.id);
 });
